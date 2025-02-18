@@ -19,27 +19,28 @@ local InputSizeHeadButton = Instance.new("TextButton")
 local TextBox = Instance.new("TextBox")
 local bigHeadEnabled = false
 local highlightEnabled = false
-local bigHeadPlayers = {}  -- Table to store players with Big Head status
-local highlightedPlayers = {}  -- Table to store players with Highlight status
+local bigHeadPlayers = {}
+local highlightedPlayers = {}
 
 -- Set up the GUI
 ScreenGui.Parent = game:GetService("CoreGui")
 Frame.Parent = ScreenGui
 Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 Frame.Size = UDim2.new(0, 200, 0, 180)
-Frame.Position = UDim2.new(1, -210, 0.5, -90) -- Middle right corner
+Frame.Position = UDim2.new(1, -210, 0.5, -90)
 
 -- Function to toggle big head on all players
 local function toggleBigHead()
     bigHeadEnabled = not bigHeadEnabled
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character and player.Character:FindFirstChild("Head") then
+            local head = player.Character.Head
             if bigHeadEnabled then
-                player.Character.Head.Size = Vector3.new(5, 5, 5)
-                bigHeadPlayers[player.UserId] = true  -- Mark the player as having Big Head
+                head.Size = Vector3.new(5, 5, 5)
+                bigHeadPlayers[player.UserId] = true
             else
-                player.Character.Head.Size = Vector3.new(1, 1, 1)
-                bigHeadPlayers[player.UserId] = false  -- Mark the player as not having Big Head
+                head.Size = Vector3.new(1, 1, 1)
+                bigHeadPlayers[player.UserId] = false
             end
         end
     end
@@ -56,19 +57,19 @@ local function toggleHighlight()
                 highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
                 highlight.Name = "AutoHighlight"
                 highlight.Parent = player.Character
-                highlightedPlayers[player.UserId] = true  -- Mark the player as highlighted
+                highlightedPlayers[player.UserId] = true
             else
                 if player.Character:FindFirstChild("AutoHighlight") then
                     player.Character.AutoHighlight:Destroy()
                 end
-                highlightedPlayers[player.UserId] = false  -- Mark the player as not highlighted
+                highlightedPlayers[player.UserId] = false
             end
         end
     end
     HighlightButton.Text = highlightEnabled and "Highlight All Players (ON)" or "Highlight All Players (OFF)"
 end
 
--- Big Head Button
+-- GUI Button setups
 BigHeadButton.Parent = Frame
 BigHeadButton.Size = UDim2.new(1, -10, 0, 30)
 BigHeadButton.Position = UDim2.new(0, 5, 0, 10)
@@ -76,7 +77,6 @@ BigHeadButton.Text = "Big Head All Players (OFF)"
 BigHeadButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
 BigHeadButton.MouseButton1Click:Connect(toggleBigHead)
 
--- Highlight Button
 HighlightButton.Parent = Frame
 HighlightButton.Size = UDim2.new(1, -10, 0, 30)
 HighlightButton.Position = UDim2.new(0, 5, 0, 45)
@@ -84,7 +84,6 @@ HighlightButton.Text = "Highlight All Players (OFF)"
 HighlightButton.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
 HighlightButton.MouseButton1Click:Connect(toggleHighlight)
 
--- Input Size Head Button
 TextBox.Parent = Frame
 TextBox.Size = UDim2.new(1, -10, 0, 30)
 TextBox.Position = UDim2.new(0, 5, 0, 80)
@@ -97,7 +96,7 @@ InputSizeHeadButton.Text = "Set Head Size"
 InputSizeHeadButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 InputSizeHeadButton.MouseButton1Click:Connect(function()
     local size = tonumber(TextBox.Text)
-    if size and size > 0 and size <= 5 then -- Limit size to prevent issues
+    if size and size > 0 and size <= 5 then
         for _, player in pairs(game.Players:GetPlayers()) do
             if player.Character and player.Character:FindFirstChild("Head") then
                 player.Character.Head.Size = Vector3.new(size, size, size)
@@ -106,36 +105,34 @@ InputSizeHeadButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Auto update on player join, leave, or reset
+-- Update Players when they join, leave, or reset
 local function updatePlayers()
     for _, player in pairs(game.Players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            humanoid.CameraOffset = Vector3.new(0, 1.5, 0) -- Adjust camera height
-        end
-        -- Apply Big Head status if enabled
-        if bigHeadPlayers[player.UserId] then
-            if player.Character and player.Character:FindFirstChild("Head") then
+        if player.Character then
+            if player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character.Humanoid
+                humanoid.CameraOffset = Vector3.new(0, 1.5, 0) -- Adjust camera height
+            end
+            if bigHeadPlayers[player.UserId] and player.Character:FindFirstChild("Head") then
                 player.Character.Head.Size = Vector3.new(5, 5, 5)
             end
-        end
-        -- Apply Highlight status if enabled
-        if highlightedPlayers[player.UserId] then
-            if player.Character and not player.Character:FindFirstChild("AutoHighlight") then
-                local highlight = Instance.new("Highlight")
-                highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
-                highlight.Name = "AutoHighlight"
-                highlight.Parent = player.Character
+            if highlightedPlayers[player.UserId] then
+                if not player.Character:FindFirstChild("AutoHighlight") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+                    highlight.Name = "AutoHighlight"
+                    highlight.Parent = player.Character
+                end
             end
         end
     end
 end
 
-game.Players.PlayerAdded:Connect(updatePlayers)
-game.Players.PlayerRemoving:Connect(updatePlayers)
 game.Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(updatePlayers)
+    updatePlayers()
 end)
+game.Players.PlayerRemoving:Connect(updatePlayers)
 
 -- Close Button
 CloseButton.Parent = Frame
@@ -150,8 +147,8 @@ end)
 
 -- Open Button
 OpenButton.Parent = ScreenGui
-OpenButton.Size = UDim2.new(0, 100, 0, 50) -- Make it bigger
-OpenButton.Position = UDim2.new(1, -110, 0.5, -55) -- Move it slightly up
+OpenButton.Size = UDim2.new(0, 100, 0, 50)
+OpenButton.Position = UDim2.new(1, -110, 0.5, -55)
 OpenButton.Text = "Open"
 OpenButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
 OpenButton.Visible = false
