@@ -82,36 +82,28 @@ local function getHeadSize()
     return math.clamp(headSize, 1, 35)
 end
 
--- Function to Fix Freezing (Adjust Physics)
-local function fixPhysics(head)
+-- Function to Optimize Physics (Prevent Freezing)
+local function optimizeHeadPhysics(head)
     head.CanCollide = false
     head.Massless = true
     head.Anchored = false
+    local success, err = pcall(function()
+        head:SetNetworkOwner(nil) -- Reduce physics lag
+    end)
 end
 
--- Function to Resize Heads Smoothly (Prevents Freezing)
+-- Function to Resize Heads Efficiently
 local function applyBigHead()
     local localPlayer = game.Players.LocalPlayer
     local headSize = getHeadSize()
-
+    
     for _, player in ipairs(game.Players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
             local head = player.Character.Head
-            fixPhysics(head)
-
-            -- Gradual Scaling (Prevents Lag)
-            game:GetService("TweenService"):Create(
-                head,
-                TweenInfo.new(0.5, Enum.EasingStyle.Linear),
-                {Size = Vector3.new(headSize, headSize, headSize)}
-            ):Play()
-
+            head.Size = Vector3.new(headSize, headSize, headSize)
+            optimizeHeadPhysics(head)
             if head:FindFirstChild("Mesh") then
-                game:GetService("TweenService"):Create(
-                    head.Mesh,
-                    TweenInfo.new(0.5, Enum.EasingStyle.Linear),
-                    {Scale = Vector3.new(headSize, headSize, headSize)}
-                ):Play()
+                head.Mesh.Scale = Vector3.new(headSize, headSize, headSize)
             end
         end
     end
@@ -123,98 +115,28 @@ local function resetBigHead()
     for _, player in ipairs(game.Players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
             local head = player.Character.Head
-            fixPhysics(head)
-
-            -- Gradual Reset
-            game:GetService("TweenService"):Create(
-                head,
-                TweenInfo.new(0.5, Enum.EasingStyle.Linear),
-                {Size = Vector3.new(1, 1, 1)}
-            ):Play()
-
+            head.Size = Vector3.new(1, 1, 1)
+            optimizeHeadPhysics(head)
             if head:FindFirstChild("Mesh") then
-                game:GetService("TweenService"):Create(
-                    head.Mesh,
-                    TweenInfo.new(0.5, Enum.EasingStyle.Linear),
-                    {Scale = Vector3.new(1, 1, 1)}
-                ):Play()
+                head.Mesh.Scale = Vector3.new(1, 1, 1)
             end
         end
     end
 end
-
--- Function to Highlight Players
-local function highlightPlayers()
-    local localPlayer = game.Players.LocalPlayer
-
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local head = player.Character.Head
-            if not head:FindFirstChild("HighlightTag") then
-                local highlight = Instance.new("Highlight")
-                highlight.Name = "HighlightTag"
-                highlight.FillColor = Color3.fromRGB(255, 255, 255)
-                highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
-                highlight.Parent = head
-            end
-        end
-    end
-end
-
--- Function to Remove Highlights
-local function removeHighlights()
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild("Head") then
-            local head = player.Character.Head
-            if head:FindFirstChild("HighlightTag") then
-                head.HighlightTag:Destroy()
-            end
-        end
-    end
-end
-
--- Auto Big Head for New Players
-local function onPlayerAdded(player)
-    player.CharacterAdded:Connect(function()
-        if isBigHeadOn then
-            wait(1)
-            applyBigHead()
-        end
-        if isHighlightOn then
-            wait(1)
-            highlightPlayers()
-        end
-    end)
-end
-
--- Apply to Existing Players
-for _, player in ipairs(game.Players:GetPlayers()) do
-    onPlayerAdded(player)
-end
-
-game.Players.PlayerAdded:Connect(onPlayerAdded)
 
 -- Button Click Functions
 BigHeadButton.MouseButton1Click:Connect(function()
     isBigHeadOn = not isBigHeadOn
-    BigHeadButton.Text = isBigHeadOn and "Big Head All: ON" or "Big Head All: OFF"
     if isBigHeadOn then
+        BigHeadButton.Text = "Big Head All: ON"
         applyBigHead()
     else
+        BigHeadButton.Text = "Big Head All: OFF"
         resetBigHead()
     end
 end)
 
-HighlightButton.MouseButton1Click:Connect(function()
-    isHighlightOn = not isHighlightOn
-    HighlightButton.Text = isHighlightOn and "Highlight All: ON" or "Highlight All: OFF"
-    if isHighlightOn then
-        highlightPlayers()
-    else
-        removeHighlights()
-    end
-end)
-
+-- Hide/Show GUI
 CloseButton.MouseButton1Click:Connect(function()
     Frame.Visible = false
     OpenButton.Visible = true
@@ -224,3 +146,17 @@ OpenButton.MouseButton1Click:Connect(function()
     Frame.Visible = true
     OpenButton.Visible = false
 end)
+
+-- Auto Big Head for New Players
+local function onPlayerAdded(player)
+    player.CharacterAdded:Connect(function()
+        wait(1)
+        if isBigHeadOn then applyBigHead() end
+    end)
+end
+
+for _, player in ipairs(game.Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
+
+game.Players.PlayerAdded:Connect(onPlayerAdded)
