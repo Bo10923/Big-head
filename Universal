@@ -1,14 +1,3 @@
-game:GetService("StarterGui"):SetCore("SendNotification",{
-                Title = "Credit",
-                Text = "Bohight123",
-                 Duration = 15})
-
-if game:GetService("CoreGui"):FindFirstChild("Emotes") then
-    game:GetService("CoreGui"):FindFirstChild("Emotes"):Destroy()
-end
-
-wait(1)
-
 local ScreenGui = Instance.new("ScreenGui")
 local Frame = Instance.new("Frame")
 local BigHeadButton = Instance.new("TextButton")
